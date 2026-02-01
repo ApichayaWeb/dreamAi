@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -25,7 +25,7 @@
     "date-fns": "^4.1.0",
     "lucide-react": "^0.563.0",
     "lunas": "^0.0.1-beta.6",
-    "next": "16.1.6",
+    "next": "^15.0.0",
     "next-themes": "^0.4.6",
     "openai": "^6.16.0",
     "react": "19.2.3",
