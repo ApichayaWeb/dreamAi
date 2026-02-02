@@ -29,11 +29,6 @@ export default function LandingPage() {
                 เข้าสู่ระบบ
               </Button>
             </Link>
-            <Link href="/analyze">
-              <Button className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-900/30">
-                วิเคราะห์ฝันเลย <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -56,14 +51,11 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-6">
-            <Link href="/analyze">
+            <Link href="/login">
               <Button size="lg" className="h-16 px-10 text-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 shadow-2xl shadow-purple-900/40 hover:scale-105 transition-all duration-300">
                 เริ่มตีความฝันทันที
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="h-16 px-10 text-xl border-purple-500/50 text-purple-300 hover:bg-purple-950/30 hover:text-purple-200">
-              ดูตัวอย่างการตีความ
-            </Button>
           </div>
         </div>
       </section>
@@ -109,9 +101,11 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold mb-8 text-purple-200">
             พร้อมจะสำรวจโลกในฝันของคุณหรือยัง?
           </h2>
-          <Button size="lg" className="h-16 px-12 text-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:brightness-110 shadow-xl shadow-purple-900/50">
-            เริ่มวิเคราะห์ฝัน
+           <Link href="/login">
+           <Button size="lg" className="h-16 px-12 text-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:brightness-110 shadow-xl shadow-purple-900/50">
+            เริ่มวิเคราะห์ฝันฟรี
           </Button>
+          </Link>
         </div>
       </section>
     </div>
