@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        // เวอร์ชัน 0.8.0+ ต้องใช้ getAll และ setAll เท่านั้น
+        // รูปแบบใหม่สำหรับ @supabase/ssr v0.1.0+ ขึ้นไป
         getAll() {
           return request.cookies.getAll()
         },
