@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+if (typeof __dirname === 'undefined') {
+  // @ts-ignore
+  globalThis.__dirname = '';
+}
+
 export async function middleware(request: NextRequest) {
   try {
     // 1. เช็คก่อนเลยว่า Env มาไหม? (ดูใน Logs ของ Vercel)
