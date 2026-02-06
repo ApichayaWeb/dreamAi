@@ -5,14 +5,8 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  // ถ้ามี parameter "next" ให้ไปที่นั่น (เช่น /update-password) ถ้าไม่มีให้ไป /dashboard
   const next = searchParams.get('next') ?? '/dashboard'
-  
-  // ✅ 1. ดักจับ Error จาก Supabase (เช่น ลิงก์หมดอายุ)
-  const errorDescription = searchParams.get('error_description')
-  if (errorDescription) {
-    // ส่ง Error กลับไปแสดงที่หน้า Login
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorDescription)}`)
-  }
 
   if (code) {
     const cookieStore = await cookies()
@@ -21,24 +15,31 @@ export async function GET(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
-          remove(name: string, options: CookieOptions) { cookieStore.delete({ name, ...options }) },
+          get(name: string) {
+            return cookieStore.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            cookieStore.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            cookieStore.delete({ name, ...options })
+          },
         },
       }
     )
     
-    // ✅ 2. แลกเปลี่ยน Code เป็น Session
+    // แลกเปลี่ยน Code เป็น Session
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     
     if (!error) {
+      // ✅ สำคัญ: Redirect ไปยังหน้าปลายทาง (ในที่นี้คือ /update-password)
+      // โดย Session จะติดไปด้วยผ่าน Cookies ที่ set ไว้ข้างบน
       return NextResponse.redirect(`${origin}${next}`)
     } else {
-        // ถ้าแลก Code ไม่ผ่าน
-        return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`)
+        console.error('Auth Code Exchange Error:', error)
     }
   }
 
-  // กรณีอื่นๆ
-  return NextResponse.redirect(`${origin}/login?error=auth_code_missing`)
+  // ถ้า Error ให้กลับไปหน้า Login พร้อมแจ้งเตือน
+  return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`)
 }
