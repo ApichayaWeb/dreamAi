@@ -1,22 +1,32 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { KeyRound, Lock, Eye, EyeOff } from 'lucide-react'
+import { KeyRound, Lock, CheckCircle2 } from 'lucide-react'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  
   const router = useRouter()
   const supabase = createClient()
+
+  // ตรวจสอบ Session: ปกติเมื่อกดลิงก์จากอีเมล Supabase จะ log in ให้ชั่วคราว
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        toast.error('ลิงก์หมดอายุหรือใช้งานไม่ได้ กรุณาขอรีเซ็ตรหัสผ่านใหม่')
+        router.replace('/login')
+      }
+    }
+    checkSession()
+  }, [router, supabase])
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +44,6 @@ export default function UpdatePasswordPage() {
     setLoading(true)
 
     try {
-      // ฟังก์ชัน updateUser ทำงานได้เพราะ User ถูก Logged in อัตโนมัติจากไฟล์ callback แล้ว
       const { error } = await supabase.auth.updateUser({
         password: password
       })
@@ -43,12 +52,11 @@ export default function UpdatePasswordPage() {
 
       toast.success('เปลี่ยนรหัสผ่านสำเร็จ! กรุณาเข้าสู่ระบบด้วยรหัสใหม่')
       
-      // Logout เพื่อความปลอดภัย แล้วส่งกลับหน้า Login
+      // Logout เพื่อความปลอดภัยและให้ Login ใหม่
       await supabase.auth.signOut()
       router.push('/login')
       
     } catch (error: any) {
-      console.error(error)
       toast.error('เกิดข้อผิดพลาด: ' + (error.message || 'ไม่สามารถเปลี่ยนรหัสผ่านได้'))
     } finally {
       setLoading(false)
@@ -62,7 +70,7 @@ export default function UpdatePasswordPage() {
          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.1),transparent_70%)]" />
       </div>
 
-      <Card className="w-full max-w-md bg-violet-950/12 backdrop-blur-2xl border border-violet-500/15 shadow-2xl shadow-violet-950/40 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
+      <Card className="w-full max-w-md bg-violet-950/18 backdrop-blur-2xl border border-violet-500/15 shadow-2xl shadow-violet-950/40 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500">
         <CardHeader className="text-center pb-6 border-b border-violet-500/10">
           <div className="flex justify-center mb-4">
             <div className="p-4 bg-gradient-to-br from-violet-600/20 to-indigo-600/20 rounded-full border border-violet-400/20 shadow-inner">
@@ -83,7 +91,7 @@ export default function UpdatePasswordPage() {
               <div className="relative group">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 transition-colors group-focus-within:text-violet-300" />
                 <Input 
-                  type={showPassword ? "text" : "password"}
+                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -91,19 +99,12 @@ export default function UpdatePasswordPage() {
                   placeholder="รหัสผ่านใหม่ (ขั้นต่ำ 6 ตัวอักษร)"
                   className="pl-12 pr-12 h-12 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/50 focus:border-violet-400 focus:ring-violet-400/20 transition-all rounded-xl"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-violet-300/50 hover:text-violet-200 transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
               </div>
 
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 transition-colors group-focus-within:text-violet-300" />
+                <CheckCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 transition-colors group-focus-within:text-violet-300" />
                 <Input 
-                  type={showPassword ? "text" : "password"}
+                  type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
@@ -118,12 +119,7 @@ export default function UpdatePasswordPage() {
               className="w-full h-12 text-lg font-medium bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:brightness-110 hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-violet-900/40 rounded-xl border border-violet-400/20"
               disabled={loading}
             >
-              {loading ? (
-                 <span className="flex items-center gap-2">
-                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                   กำลังบันทึก...
-                 </span>
-              ) : 'บันทึกรหัสผ่านใหม่'}
+              {loading ? 'กำลังบันทึก...' : 'เปลี่ยนรหัสผ่าน'}
             </Button>
           </form>
         </CardContent>
