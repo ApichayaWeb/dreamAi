@@ -17,13 +17,11 @@ export default function HistoryPage() {
   const [search, setSearch] = useState('')
   const supabase = createClient()
 
-  // ดึงข้อมูลเมื่อเข้าหน้าเว็บ
   const fetchHistory = async () => {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // ดึงข้อมูลพร้อมคำทำนาย (กรอง Soft Delete อัตโนมัติถ้าใช้ View หรือ Query ปกติ)
     const { data, error } = await supabase
       .from('dreams')
       .select(`
@@ -31,11 +29,14 @@ export default function HistoryPage() {
         interpretations ( analysis_text, lucky_numbers, happiness_score )
       `)
       .eq('user_id', user.id)
-      .is('deleted_at', null) // ** สำคัญ: กรอง Soft Delete **
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
-    if (error) toast.error('โหลดข้อมูลไม่สำเร็จ')
-    else setDreams(data || [])
+    if (error) {
+      toast.error('ไม่สามารถโหลดประวัติได้')
+    } else {
+      setDreams(data || [])
+    }
     setLoading(false)
   }
 
@@ -43,90 +44,132 @@ export default function HistoryPage() {
     fetchHistory()
   }, [])
 
-  // ฟังก์ชัน Soft Delete
   const handleDelete = async (id: string) => {
-    if (!confirm('คุณต้องการลบความฝันนี้ใช่หรือไม่? (สามารถกู้คืนได้โดยผู้ดูแลระบบ)')) return
+    if (!confirm('ต้องการลบบันทึกความฝันนี้หรือไม่? (กู้คืนได้โดยผู้ดูแลระบบ)')) return
 
-    // อัปเดต deleted_at แทนการลบจริง
     const { error } = await supabase
       .from('dreams')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id)
 
     if (error) {
-      toast.error('ลบไม่สำเร็จ: ' + error.message)
+      toast.error('ลบไม่สำเร็จ')
     } else {
-      toast.success('ลบรายการเรียบร้อย')
-      fetchHistory() // โหลดข้อมูลใหม่
+      toast.success('ลบเรียบร้อยแล้ว')
+      fetchHistory()
     }
   }
 
-  const filteredDreams = dreams.filter(d => d.dream_text.includes(search))
+  const filteredDreams = dreams.filter(d => 
+    d.dream_text.toLowerCase().includes(search.toLowerCase())
+  )
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-800">📖 บันทึกความฝันของฉัน</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0e1f] via-[#1e1738] to-[#0f0e1f] text-[#e5e5ff] relative overflow-x-hidden">
+      {/* Subtle cosmic glow */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(167,139,250,0.13),transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_75%,rgba(99,102,241,0.11),transparent_70%)]" />
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-6 md:py-10">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-200 via-indigo-200 to-cyan-100">
+            บันทึกความฝันของฉัน
+          </h1>
           <Link href="/dashboard">
-            <Button variant="outline">กลับหน้าหลัก</Button>
+            <Button variant="outline" className="border-violet-500/30 text-indigo-200 hover:bg-violet-950/30 hover:text-white">
+              กลับไปทำนายฝัน
+            </Button>
           </Link>
         </div>
 
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-          <Input 
-            placeholder="ค้นหาประวัติความฝัน..." 
-            className="pl-10"
+        <div className="relative mb-8">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-300/70" />
+          <Input
+            placeholder="ค้นหาความฝัน... (เช่น ทะเลสีม่วง, บินได้)"
+            className="pl-12 bg-violet-950/20 border-violet-500/25 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 h-12 shadow-inner"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
         {loading ? (
-           <p className="text-center text-slate-500">กำลังโหลดบันทึก...</p>
+          <div className="text-center py-12 text-indigo-300/80">
+            กำลังเชื่อมต่อสู่คลังความฝัน...
+          </div>
         ) : filteredDreams.length === 0 ? (
-           <div className="text-center py-10 text-slate-400">
-             <p>ยังไม่มีบันทึกความฝัน</p>
-             <Link href="/dashboard"><Button className="mt-4">เริ่มทำนายฝันแรก</Button></Link>
-           </div>
+          <div className="text-center py-16 text-indigo-300/70">
+            <p className="text-lg mb-6">ยังไม่มีบันทึกความฝันในภวังค์ของคุณ</p>
+            <Link href="/dashboard">
+              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:brightness-110 hover:scale-105 shadow-violet-900/40">
+                เริ่มบันทึกฝันแรก
+              </Button>
+            </Link>
+          </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5 md:space-y-6">
             {filteredDreams.map((item) => (
-              <Card key={item.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-2 flex flex-row items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg text-slate-800 line-clamp-1">
-                      {item.dream_text}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 text-xs text-slate-500">
-                      <Calendar className="w-3 h-3" />
-                      {format(new Date(item.created_at), 'dd MMM yyyy HH:mm', { locale: th })}
+              <Card 
+                key={item.id} 
+                className="bg-violet-950/18 backdrop-blur-xl border border-violet-500/20 shadow-xl shadow-violet-950/30 rounded-2xl overflow-hidden hover:border-violet-400/40 transition-all duration-300 group"
+              >
+                <CardHeader className="pb-3 border-b border-violet-500/10">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-2 flex-1">
+                      <CardTitle className="text-lg md:text-xl text-violet-100 line-clamp-2 leading-tight">
+                        {item.dream_text}
+                      </CardTitle>
+                      <div className="flex items-center gap-2.5 text-xs text-indigo-300/90">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {format(new Date(item.created_at), 'd MMM yyyy • HH:mm', { locale: th })}
+                      </div>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-rose-400 hover:text-rose-300 hover:bg-rose-950/30"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(item.id)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-600 line-clamp-2 mb-3">
-                    {item.interpretations?.[0]?.analysis_text || "กำลังประมวลผล..."}
+
+                <CardContent className="pt-5 text-indigo-100/95 text-sm md:text-base leading-relaxed">
+                  <p className="line-clamp-3 mb-5 opacity-90">
+                    {item.interpretations?.[0]?.analysis_text || "กำลังตีความอยู่ในภวังค์..."}
                   </p>
-                  
-                  {/* แสดง Tags และ Mood */}
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-                     <div className="flex gap-2">
-                        {item.tags?.map((tag: string, i: number) => (
-                           <span key={i} className="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-xs">{tag}</span>
-                        ))}
-                     </div>
-                     <div className="flex items-center gap-1 text-xs font-medium">
-                        {/* แสดงไอคอนตาม Happiness Score */}
-                        {item.interpretations?.[0]?.happiness_score >= 7 ? <Smile className="w-4 h-4 text-green-500"/> :
-                         item.interpretations?.[0]?.happiness_score <= 3 ? <Frown className="w-4 h-4 text-red-500"/> :
-                         <Meh className="w-4 h-4 text-yellow-500"/>}
-                        <span className="text-slate-400">เลขมงคล: {item.interpretations?.[0]?.lucky_numbers?.number_text}</span>
-                     </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-violet-500/10">
+                    <div className="flex flex-wrap gap-2">
+                      {item.tags?.map((tag: string, i: number) => (
+                        <span 
+                          key={i} 
+                          className="bg-violet-950/40 text-violet-200 px-2.5 py-1 rounded-md text-xs border border-violet-500/20"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-sm">
+                      {/* Mood icon */}
+                      {item.interpretations?.[0]?.happiness_score >= 7 ? (
+                        <Smile className="w-5 h-5 text-emerald-400" />
+                      ) : item.interpretations?.[0]?.happiness_score <= 3 ? (
+                        <Frown className="w-5 h-5 text-rose-400" />
+                      ) : (
+                        <Meh className="w-5 h-5 text-amber-400" />
+                      )}
+
+                      {/* Lucky numbers */}
+                      {item.interpretations?.[0]?.lucky_numbers?.number_text && (
+  <span className="text-amber-200/90 font-medium">
+    เลขนำโชค: {item.interpretations[0].lucky_numbers.number_text}
+  </span>
+)}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
