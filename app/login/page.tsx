@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { toast } from 'sonner'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Chrome, MessageCircle, Moon, ArrowLeft, KeyRound, MapPin, Calendar, User } from 'lucide-react' 
+import { Chrome, MessageCircle, Moon, ArrowLeft, KeyRound, MapPin, Calendar, User, Lock, Mail, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 // รายชื่อจังหวัดภาษาไทย
@@ -141,174 +141,221 @@ export default function LoginPage() {
       if (newView === 'login') { setConfirmPassword(''); setAgreed(false); }
   }
 
-  return (
-    // ... (UI Code ส่วน JSX เหมือนเดิมทั้งหมด ใช้ไฟล์เดิมได้เลย แค่แก้ handleAuth ข้างบน) ...
-    <div className="flex items-center justify-center min-h-screen bg-slate-50 font-sans p-4 py-8">
-      <Card className="w-full max-w-[450px] shadow-xl border-slate-200 animate-in fade-in zoom-in-95 duration-300">
-        <CardHeader className="text-center space-y-2 pb-2">
-          <div className="flex justify-center mb-2">
-            <div className="p-3 bg-indigo-50 rounded-full">
-                {view === 'reset' ? <KeyRound className="w-8 h-8 text-indigo-600" /> : <Moon className="w-8 h-8 text-indigo-600" />}
+ return (
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0f0e1f] via-[#1e1738] to-[#0f0e1f] text-[#e5e5ff]">
+      {/* Background dreamy layers - นุ่มขึ้น ดู serene */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(167,139,250,0.16),transparent_55%)] animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_75%,rgba(99,102,241,0.14),transparent_65%)] animate-pulse-slow-delay" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]" />
+      </div>
+
+      <div className="relative z-10 flex items-center justify-center min-h-screen p-6 py-12">
+        <div className="w-full max-w-lg">
+          {/* Logo / Brand - เพิ่ม glow นุ่ม ๆ */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-600/30 to-indigo-600/30 backdrop-blur-2xl border border-violet-400/20 shadow-xl shadow-violet-900/30 animate-float-slow">
+              <Moon className="w-10 h-10 text-violet-200 animate-pulse-slow" />
             </div>
+            <h1 className="text-5xl md:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-violet-200 via-indigo-200 to-cyan-100 tracking-tight drop-shadow-lg">
+              DreamAI
+            </h1>
+            <p className="mt-4 text-indigo-200/90 text-lg font-light">
+              ตีความฝันด้วยปัญญาประดิษฐ์แห่งภวังค์
+            </p>
           </div>
-          <CardTitle className="text-2xl font-bold text-slate-800">
-            {view === 'signup' ? 'สร้างบัญชีใหม่' : view === 'login' ? 'ยินดีต้อนรับกลับมา' : 'กู้คืนรหัสผ่าน'}
-          </CardTitle>
-          <CardDescription>
-            {view === 'signup' ? 'กรอกข้อมูลเพื่อเริ่มวิเคราะห์จิตใต้สำนึก' : view === 'login' ? 'เข้าสู่ระบบเพื่อดูประวัติความฝัน' : 'กรอกอีเมลเพื่อรับลิงก์'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
-            
-            <div className="space-y-3">
-                <div className="space-y-1">
-                    <label className="text-xs font-medium text-slate-700">อีเมล</label>
-                    <Input 
-                        type="email" 
-                        placeholder="name@example.com" 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
+
+          {/* Glass Card - นุ่ม หรู  contrast ดีขึ้น */}
+          <Card className="bg-violet-950/12 backdrop-blur-2xl border border-violet-500/15 shadow-2xl shadow-violet-950/40 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+            <CardHeader className="text-center pb-6 space-y-5 border-b border-violet-500/10">
+              <div className="flex justify-center">
+                {view === 'reset' ? (
+                  <KeyRound className="w-14 h-14 text-violet-300 animate-pulse-slow" />
+                ) : view === 'signup' ? (
+                  <Sparkles className="w-14 h-14 text-cyan-300 animate-pulse-slow" />
+                ) : (
+                  <Lock className="w-14 h-14 text-indigo-300 animate-pulse-slow" />
+                )}
+              </div>
+              <CardTitle className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-100 to-cyan-100">
+                {view === 'signup' ? 'เริ่มต้นการเดินทางในฝัน' : 
+                 view === 'login' ? 'ยินดีต้อนรับสู่ DreamAI' : 
+                 'กู้คืนการเข้าถึงของคุณ'}
+              </CardTitle>
+              <CardDescription className="text-indigo-200/85 text-base font-light leading-relaxed">
+                {view === 'signup' ? 'กรอกข้อมูลเพื่อการตีความฝันที่ลึกซึ้งและแม่นยำ' :
+                 view === 'login' ? 'เข้าสู่ระบบเพื่อสำรวจประวัติฝันและการวิเคราะห์' :
+                 'ป้อนอีเมลเพื่อรับลิงก์ตั้งรหัสผ่านใหม่'}
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="pt-10 px-8">
+              <form onSubmit={handleAuth} className="space-y-7">
+                <div className="space-y-6">
+                  <div className="relative group">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 group-focus-within:text-violet-300 transition-colors" />
+                    <Input
+                      type="email"
+                      placeholder="อีเมลของคุณ"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="pl-12 h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/30 transition-all duration-300 shadow-inner"
                     />
-                </div>
+                  </div>
 
-                {view !== 'reset' && (
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <label className="text-xs font-medium text-slate-700">รหัสผ่าน</label>
-                            {view === 'login' && (
-                                <button type="button" onClick={() => setView('reset')} className="text-xs text-indigo-600 hover:underline">
-                                    ลืมรหัสผ่าน?
-                                </button>
-                            )}
-                        </div>
-                        <Input 
-                            type="password" 
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            minLength={6}
-                        />
-                        {view === 'signup' && password.length > 0 && (
-                            <div className="flex gap-1 h-1 mt-1">
-                                <div className={`flex-1 rounded-full ${passwordStrength >= 1 ? 'bg-red-500' : 'bg-slate-200'}`} />
-                                <div className={`flex-1 rounded-full ${passwordStrength >= 2 ? 'bg-yellow-500' : 'bg-slate-200'}`} />
-                                <div className={`flex-1 rounded-full ${passwordStrength >= 3 ? 'bg-blue-500' : 'bg-slate-200'}`} />
-                                <div className={`flex-1 rounded-full ${passwordStrength >= 4 ? 'bg-green-500' : 'bg-slate-200'}`} />
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {view === 'signup' && (
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-slate-700">ยืนยันรหัสผ่าน</label>
-                        <Input 
-                            type="password" 
-                            placeholder="••••••••"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            minLength={6}
-                        />
-                    </div>
-                )}
-            </div>
-
-            {view === 'signup' && (
-                <div className="pt-2 space-y-3 border-t border-slate-100">
-                    <p className="text-xs text-slate-500 font-medium">ข้อมูลส่วนตัว (เพื่อความแม่นยำในการทำนาย)</p>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                                <Calendar className="w-3 h-3" /> วันเกิด
-                            </label>
-                            <Input 
-                                type="date" 
-                                value={birthDate}
-                                onChange={(e) => setBirthDate(e.target.value)}
-                                required
-                                className="text-sm"
+                  {view !== 'reset' && (
+                    <div className="relative group">
+                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 group-focus-within:text-violet-300 transition-colors" />
+                      <Input
+                        type="password"
+                        placeholder="รหัสผ่าน"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className="pl-12 h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/30 transition-all duration-300 shadow-inner"
+                      />
+                      {view === 'signup' && password.length > 0 && (
+                        <div className="flex gap-2.5 mt-3">
+                          {[1,2,3,4].map((level) => (
+                            <div
+                              key={level}
+                              className={`h-2.5 flex-1 rounded-full transition-all duration-400 ${
+                                passwordStrength >= level
+                                  ? level === 1 ? 'bg-rose-400/80' :
+                                    level === 2 ? 'bg-amber-400/80' :
+                                    level === 3 ? 'bg-blue-400/80' : 'bg-emerald-400/80'
+                                  : 'bg-violet-800/40'
+                              } shadow-sm`}
                             />
+                          ))}
                         </div>
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                                <User className="w-3 h-3" /> เพศ
-                            </label>
-                            <select 
-                                className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                value={gender}
-                                onChange={(e) => setGender(e.target.value)}
-                            >
-                                <option value="prefer_not_to_say">ไม่ระบุ</option>
-                                <option value="male">ชาย</option>
-                                <option value="female">หญิง</option>
-                                <option value="lgbtq">LGBTQ+</option>
-                            </select>
-                        </div>
+                      )}
                     </div>
+                  )}
 
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-slate-700 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> จังหวัด / ภูมิภาค
-                        </label>
-                        <Input 
-                            list="provinces"
-                            placeholder="ค้นหาชื่อจังหวัด..." 
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
+                  {/* ส่วน signup fields - ปรับ input ให้กลมกลืน */}
+                  {view === 'signup' && (
+                    <>
+                      <Input
+                        type="password"
+                        placeholder="ยืนยันรหัสผ่าน"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/30 transition-all shadow-inner"
+                      />
+
+                      <div className="grid grid-cols-2 gap-6">
+                        {/* วันเกิด + เพศ - ปรับ select ให้สวย */}
+                        <div className="space-y-2.5">
+                          <Label className="text-sm text-indigo-200 flex items-center gap-2">
+                            <Calendar className="w-4 h-4" /> วันเกิด
+                          </Label>
+                          <Input
+                            type="date"
+                            value={birthDate}
+                            onChange={(e) => setBirthDate(e.target.value)}
                             required
-                            className="text-sm"
+                            className="h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] focus:border-violet-400 focus:ring-violet-400/20 transition-all shadow-inner"
+                          />
+                        </div>
+                        <div className="space-y-2.5">
+                          <Label className="text-sm text-indigo-200 flex items-center gap-2">
+                            <User className="w-4 h-4" /> เพศ
+                          </Label>
+                          <select
+                            value={gender}
+                            onChange={(e) => setGender(e.target.value)}
+                            className="flex h-13 w-full rounded-md border border-violet-500/30 bg-violet-950/20 px-4 text-[#f0f0ff] focus:border-violet-400 focus:ring-violet-400/20 transition-all shadow-inner"
+                          >
+                            <option value="prefer_not_to_say">ไม่ระบุ</option>
+                            <option value="male">ชาย</option>
+                            <option value="female">หญิง</option>
+                            <option value="lgbtq">LGBTQ+</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <Label className="text-sm text-indigo-200 flex items-center gap-2">
+                          <MapPin className="w-4 h-4" /> จังหวัด
+                        </Label>
+                        <Input
+                          list="provinces"
+                          placeholder="พิมพ์หรือเลือกจังหวัด..."
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          required
+                          className="h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 transition-all shadow-inner"
                         />
                         <datalist id="provinces">
-                            {THAI_PROVINCES.map((province) => (
-                                <option key={province} value={province} />
-                            ))}
+                          {THAI_PROVINCES.map((p) => <option key={p} value={p} />)}
                         </datalist>
-                    </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-            )}
 
-            {view === 'signup' && (
-                <div className="flex items-start space-x-2 pt-2">
-                    <Checkbox id="terms" checked={agreed} onCheckedChange={(c) => setAgreed(c as boolean)} />
-                    <Label htmlFor="terms" className="text-xs text-slate-600 leading-tight cursor-pointer">
-                        ฉันยอมรับ <Link href="/privacy" className="text-indigo-600 hover:underline">นโยบายความเป็นส่วนตัว</Link>
+                {view === 'signup' && (
+                  <div className="flex items-start space-x-3 pt-4">
+                    <Checkbox
+                      id="terms"
+                      checked={agreed}
+                      onCheckedChange={(c) => setAgreed(!!c)}
+                      className="border-violet-400/50 data-[state=checked]:bg-violet-600 data-[state=checked]:border-violet-500 mt-1.5 transition-colors"
+                    />
+                    <Label htmlFor="terms" className="text-sm text-indigo-200 leading-relaxed cursor-pointer">
+                      ฉันยอมรับ <Link href="/privacy" className="text-cyan-300 hover:text-cyan-200 underline-offset-4 hover:underline">นโยบายความเป็นส่วนตัว (PDPA)</Link>
                     </Label>
-                </div>
-            )}
+                  </div>
+                )}
 
-            <Button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 h-11 mt-2" disabled={loading}>
-              {loading ? 'กำลังประมวลผล...' : 
-                view === 'signup' ? 'สมัครสมาชิก' : 
-                view === 'login' ? 'เข้าสู่ระบบ' : 'ส่งลิงก์รีเซ็ต'}
-            </Button>
-
-            {view === 'reset' && (
-                <Button type="button" variant="ghost" className="w-full" onClick={() => setView('login')}>
-                    <ArrowLeft className="w-4 h-4 mr-2" /> กลับไปหน้าเข้าสู่ระบบ
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 mt-6 text-lg font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:brightness-110 hover:scale-[1.02] transition-all duration-400 shadow-xl shadow-violet-900/50 border border-violet-400/20"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-3">
+                      <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                      กำลังเชื่อมต่อสู่จิตใต้สำนึก...
+                    </span>
+                  ) : view === 'signup' ? 'เริ่มต้นการเดินทางในฝัน' :
+                    view === 'login' ? 'เข้าสู่ระบบ' : 'ส่งลิงก์รีเซ็ต'}
                 </Button>
-            )}
-          </form>
-        </CardContent>
-        
-        {view !== 'reset' && (
-            <CardFooter className="flex justify-center border-t p-6">
-                <p className="text-sm text-slate-600">
-                    {view === 'signup' ? 'มีบัญชีอยู่แล้ว? ' : 'ยังไม่มีบัญชี? '}
-                    <button 
-                        onClick={() => switchView(view === 'signup' ? 'login' : 'signup')} 
-                        className="text-indigo-600 font-medium hover:underline focus:outline-none"
-                    >
-                        {view === 'signup' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิกใหม่'}
-                    </button>
+
+                {view === 'reset' && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-indigo-200 hover:text-white hover:bg-violet-950/20 mt-3 transition-colors"
+                    onClick={() => setView('login')}
+                  >
+                    <ArrowLeft className="w-5 h-5 mr-2" /> กลับไปหน้าเข้าสู่ระบบ
+                  </Button>
+                )}
+              </form>
+            </CardContent>
+
+            {view !== 'reset' && (
+              <CardFooter className="justify-center border-t border-violet-500/10 py-6 bg-violet-950/8">
+                <p className="text-base text-indigo-200">
+                  {view === 'signup' ? 'มีบัญชีแล้ว? ' : 'ยังไม่มีบัญชี? '}
+                  <button
+                    type="button"
+                    onClick={() => setView(view === 'signup' ? 'login' : 'signup')}
+                    className="text-cyan-300 font-medium hover:text-cyan-200 underline-offset-4 hover:underline focus:outline-none"
+                  >
+                    {view === 'signup' ? 'เข้าสู่ระบบ' : 'สร้างบัญชีใหม่'}
+                  </button>
                 </p>
-            </CardFooter>
-        )}
-      </Card>
+              </CardFooter>
+            )}
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }
