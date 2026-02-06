@@ -117,11 +117,13 @@ export default function LoginPage() {
         router.push('/dashboard')
 
       } else if (view === 'reset') {
+        // --- 🔄 โหมดลืมรหัสผ่าน ---
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            // ลิงก์จะพากลับมาที่ auth/callback แล้ว redirect ไปหน้า update-password
             redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
         })
         if (error) throw error
-        toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว")
+        toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปที่อีเมลแล้ว กรุณาตรวจสอบ")
         setView('login')
       }
 
@@ -135,7 +137,7 @@ export default function LoginPage() {
     }
   }
 
-  // ... (ส่วน Render Switch View เหมือนเดิม) ...
+  // ... (ส่วน Render Switch View) ...
   const switchView = (newView: 'login' | 'signup') => {
       setView(newView)
       if (newView === 'login') { setConfirmPassword(''); setAgreed(false); }
@@ -143,7 +145,6 @@ export default function LoginPage() {
 
  return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0f0e1f] via-[#1e1738] to-[#0f0e1f] text-[#e5e5ff]">
-      {/* Background dreamy layers - นุ่มขึ้น ดู serene */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(167,139,250,0.16),transparent_55%)] animate-pulse-slow" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_75%,rgba(99,102,241,0.14),transparent_65%)] animate-pulse-slow-delay" />
@@ -152,7 +153,6 @@ export default function LoginPage() {
 
       <div className="relative z-10 flex items-center justify-center min-h-screen p-6 py-12">
         <div className="w-full max-w-lg">
-          {/* Logo / Brand - เพิ่ม glow นุ่ม ๆ */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-600/30 to-indigo-600/30 backdrop-blur-2xl border border-violet-400/20 shadow-xl shadow-violet-900/30 animate-float-slow">
               <Moon className="w-10 h-10 text-violet-200 animate-pulse-slow" />
@@ -165,7 +165,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Glass Card - นุ่ม หรู  contrast ดีขึ้น */}
           <Card className="bg-violet-950/12 backdrop-blur-2xl border border-violet-500/15 shadow-2xl shadow-violet-950/40 rounded-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-700">
             <CardHeader className="text-center pb-6 space-y-5 border-b border-violet-500/10">
               <div className="flex justify-center">
@@ -205,17 +204,33 @@ export default function LoginPage() {
                   </div>
 
                   {view !== 'reset' && (
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 group-focus-within:text-violet-300 transition-colors" />
-                      <Input
-                        type="password"
-                        placeholder="รหัสผ่าน"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="pl-12 h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/30 transition-all duration-300 shadow-inner"
-                      />
+                    <div className="space-y-2">
+                      <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-violet-300/70 group-focus-within:text-violet-300 transition-colors" />
+                        <Input
+                          type="password"
+                          placeholder="รหัสผ่าน"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          minLength={6}
+                          className="pl-12 h-13 bg-violet-950/20 border-violet-500/30 text-[#f0f0ff] placeholder:text-indigo-300/60 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/30 transition-all duration-300 shadow-inner"
+                        />
+                      </div>
+                      
+                      {/* ✅ ปุ่มลืมรหัสผ่าน (จะแสดงเมื่ออยู่ในหน้า Login) */}
+                      {view === 'login' && (
+                        <div className="flex justify-end">
+                            <button 
+                                type="button" 
+                                onClick={() => setView('reset')} 
+                                className="text-sm text-cyan-300 hover:text-cyan-200 underline-offset-4 hover:underline transition-colors"
+                            >
+                                ลืมรหัสผ่าน?
+                            </button>
+                        </div>
+                      )}
+
                       {view === 'signup' && password.length > 0 && (
                         <div className="flex gap-2.5 mt-3">
                           {[1,2,3,4].map((level) => (
@@ -235,7 +250,7 @@ export default function LoginPage() {
                     </div>
                   )}
 
-                  {/* ส่วน signup fields - ปรับ input ให้กลมกลืน */}
+                  {/* ส่วน signup fields */}
                   {view === 'signup' && (
                     <>
                       <Input
@@ -248,7 +263,6 @@ export default function LoginPage() {
                       />
 
                       <div className="grid grid-cols-2 gap-6">
-                        {/* วันเกิด + เพศ - ปรับ select ให้สวย */}
                         <div className="space-y-2.5">
                           <Label className="text-sm text-indigo-200 flex items-center gap-2">
                             <Calendar className="w-4 h-4" /> วันเกิด
@@ -345,7 +359,7 @@ export default function LoginPage() {
                   {view === 'signup' ? 'มีบัญชีแล้ว? ' : 'ยังไม่มีบัญชี? '}
                   <button
                     type="button"
-                    onClick={() => setView(view === 'signup' ? 'login' : 'signup')}
+                    onClick={() => switchView(view === 'signup' ? 'login' : 'signup')}
                     className="text-cyan-300 font-medium hover:text-cyan-200 underline-offset-4 hover:underline focus:outline-none"
                   >
                     {view === 'signup' ? 'เข้าสู่ระบบ' : 'สร้างบัญชีใหม่'}
