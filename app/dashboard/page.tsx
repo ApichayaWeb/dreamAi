@@ -12,30 +12,29 @@ import { LogOut, Sparkles, Moon, Mic, MicOff, User, History, Settings, Menu, Pen
 import { format } from 'date-fns'
 import { th } from 'date-fns/locale'
 import { Skeleton } from '@/components/ui/skeleton'
-import { InstallBanner, usePWAInstall } from '@/components/install-prompt' // นำเข้า PWA
 
-// --- Component: Moon Phase ---
+// MoonPhaseWidget
 const MoonPhaseWidget = () => {
-  const today = new Date();
-  const day = today.getDate();
-  const phase = day % 30 < 15 ? "ข้างขึ้น" : "ข้างแรม";
-  const age = day % 15;
+  const today = new Date()
+  const day = today.getDate()
+  const phase = day % 30 < 15 ? "ข้างขึ้น" : "ข้างแรม"
+  const age = day % 15 || 15 // ป้องกัน 0
   return (
-    <div className="hidden md:flex items-center gap-2 bg-indigo-900 text-white px-3 py-1 rounded-full text-xs shadow-lg">
-      <Moon className="w-3 h-3 text-yellow-300" />
+    <div className="hidden md:flex items-center gap-2.5 bg-violet-950/20 backdrop-blur-lg border border-violet-500/20 text-indigo-200 px-4 py-1.5 rounded-full text-sm shadow-md shadow-violet-900/20 animate-pulse-slow">
+      <Moon className="w-4 h-4 text-violet-300" />
       <span>{phase} {age} ค่ำ</span>
     </div>
   )
 }
 
-// --- Component: Quick Action ---
+// Quick Action FAB - นุ่มขึ้น
 const QuickActionWidget = ({ onClick }: { onClick: () => void }) => (
-  <button 
+  <button
     onClick={onClick}
-    className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center z-50 transition-transform active:scale-95 animate-in zoom-in"
+    className="fixed bottom-8 right-6 sm:right-8 w-16 h-16 bg-gradient-to-br from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full shadow-2xl shadow-violet-900/50 flex items-center justify-center z-50 transition-all duration-400 hover:scale-110 active:scale-95 border border-violet-400/20"
     title="เขียนฝันทันที"
   >
-    <PenLine className="w-6 h-6" />
+    <PenLine className="w-7 h-7" />
   </button>
 )
 
@@ -46,14 +45,16 @@ export default function DashboardPage() {
   const [isRecording, setIsRecording] = useState(false)
   const [userEmail, setUserEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
-  
-  // PWA State
-  const [showInstallBanner, setShowInstallBanner] = useState(false)
-  const { isSupported, isInstalled, installApp } = usePWAInstall()
-  
+
+  // PWA Install Logic
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
+  const [canInstall, setCanInstall] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [showIOSModal, setShowIOSModal] = useState(false)
+
   const recognitionRef = useRef<any>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  
+
   const supabase = createClient()
   const router = useRouter()
 
@@ -66,40 +67,59 @@ export default function DashboardPage() {
       }
       setUserEmail(user.email || '')
 
-      // ✅ 1. ตรวจสอบ Role จากฐานข้อมูล (ไม่ใช่ Hardcode แล้ว)
       const { data: userData } = await supabase
         .from('users')
         .select('role')
         .eq('id', user.id)
         .single()
-      
-      if (userData?.role === 'admin') {
-        setIsAdmin(true)
-      }
 
-      // ✅ 2. ตรวจสอบการแสดง PWA Banner
-      // ถ้ายังไม่ติดตั้ง + เครื่องรองรับ + ไม่เคยปิดไปใน 7 วันนี้
-      const lastDismissed = localStorage.getItem('pwa_dismissed_ts')
-      const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000)
-      
-      if (!isInstalled && isSupported) {
-        if (!lastDismissed || parseInt(lastDismissed) < sevenDaysAgo) {
-           // หน่วงเวลา 2 วินาทีค่อยขึ้น เพื่อไม่ให้ตกใจ
-           setTimeout(() => setShowInstallBanner(true), 2000)
-        }
-      }
+      if (userData?.role === 'admin') setIsAdmin(true)
     }
     initData()
-  }, [router, supabase, isInstalled, isSupported])
 
-  const handleDismissPWA = () => {
-    setShowInstallBanner(false)
-    localStorage.setItem('pwa_dismissed_ts', Date.now().toString())
+    // PWA Install Setup
+    const ua = window.navigator.userAgent.toLowerCase()
+    setIsIOS(/iphone|ipad|ipod/.test(ua))
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault()
+      setDeferredPrompt(e)
+      setCanInstall(true)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+
+    window.addEventListener('appinstalled', () => {
+      setCanInstall(false)
+      toast.success('ติดตั้ง DreamAI สำเร็จ! เปิดจากไอคอนบนหน้าจอหรือเดสก์ท็อปได้เลย', { duration: 6000 })
+    })
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    }
+  }, [router, supabase])
+
+  const handleInstall = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === 'accepted') {
+        toast.success('กำลังติดตั้ง DreamAI...')
+      } else {
+        toast.info('คุณยกเลิกการติดตั้ง')
+      }
+      setDeferredPrompt(null)
+      setCanInstall(false)
+    } else if (isIOS) {
+      setShowIOSModal(true)
+    } else {
+      toast.info('กดเมนู (สามจุด) ที่มุมขวาบน > เลือก "ติดตั้งแอป" หรือ "Add to Home screen"', { duration: 8000 })
+    }
   }
 
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window)) {
-      toast.error('เบราว์เซอร์ไม่รองรับเสียง')
+      toast.error('เบราว์เซอร์นี้ไม่รองรับการบันทึกเสียง')
       return
     }
     const SpeechRecognition = (window as any).webkitSpeechRecognition
@@ -108,8 +128,8 @@ export default function DashboardPage() {
     recognition.start()
     setIsRecording(true)
     recognition.onresult = (event: any) => {
-        setDream(event.results[0][0].transcript)
-        setIsRecording(false)
+      setDream(event.results[0][0].transcript)
+      setIsRecording(false)
     }
     recognitionRef.current = recognition
   }
@@ -121,7 +141,7 @@ export default function DashboardPage() {
 
   const scrollToInput = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    setTimeout(() => textareaRef.current?.focus(), 500)
+    setTimeout(() => textareaRef.current?.focus(), 400)
   }
 
   const handleSubmit = async () => {
@@ -135,13 +155,13 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ dreamText: dream })
       })
-      
+
       if (response.status === 429) {
         const data = await response.json()
-        toast.error("⏳ " + (data.error || "โควต้าเต็มแล้ว"))
+        toast.error("⏳ " + (data.error || "โควต้าเต็มแล้ว กรุณารอสักครู่"))
         return
       }
-      
+
       const data = await response.json()
       if (data.error) throw new Error(data.error)
       setResult(data)
@@ -152,125 +172,200 @@ export default function DashboardPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans pb-20 relative">
-      {/* PWA Banner */}
-      {showInstallBanner && <InstallBanner onClose={handleDismissPWA} />}
+return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0e1f] via-[#1e1738] to-[#0f0e1f] text-[#e5e5ff] relative overflow-x-hidden">
+      {/* Background glow - นุ่ม ละมุน ดู serene */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_25%,rgba(167,139,250,0.18),transparent_60%)] animate-pulse-slow" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_75%,rgba(99,102,241,0.15),transparent_65%)] animate-pulse-slow-delay" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.08),transparent_70%)]" />
+      </div>
 
-      <nav className="bg-white border-b border-slate-200 px-4 md:px-6 py-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
-        <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-lg"><Sparkles className="w-5 h-5 text-white" /></div>
-            <h1 className="text-xl font-bold text-slate-800 hidden md:block">DreamPsyche</h1>
-            <MoonPhaseWidget />
+      {/* Navbar - glass นุ่มขึ้น */}
+      <nav className="sticky top-0 z-50 bg-violet-950/18 backdrop-blur-2xl border-b border-violet-500/15 px-4 sm:px-6 md:px-8 py-4 flex justify-between items-center shadow-lg shadow-violet-950/30">
+        <div className="flex items-center gap-4">
+          <div className="bg-gradient-to-br from-violet-600/70 to-indigo-600/70 p-3 rounded-xl shadow-md border border-violet-400/20">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <h1 className="text-2xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-violet-200 via-indigo-200 to-cyan-100 tracking-tight hidden md:block">
+            DreamAI
+          </h1>
+          <MoonPhaseWidget />
         </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 rounded-full pl-2 pr-4 border-slate-300 hover:bg-slate-100">
-              <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-700 font-bold">
+            <Button variant="ghost" className="gap-3 rounded-full px-3 py-1.5 hover:bg-violet-950/25 text-indigo-200">
+              <div className="w-10 h-10 bg-gradient-to-br from-violet-500/70 to-indigo-500/70 rounded-full flex items-center justify-center text-white font-bold border border-violet-400/30 shadow-sm">
                 {userEmail.charAt(0).toUpperCase()}
               </div>
-              <span className="max-w-[100px] truncate hidden md:inline">{userEmail}</span>
-              <Menu className="w-4 h-4 text-slate-500 md:hidden" />
+              <span className="max-w-[160px] truncate hidden md:inline">{userEmail}</span>
+              <Menu className="w-5 h-5 text-indigo-300 md:hidden" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>บัญชีของฉัน</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
-              <User className="mr-2 h-4 w-4" /> ตั้งค่าโปรไฟล์
+          <DropdownMenuContent align="end" className="w-64 bg-violet-950/25 backdrop-blur-2xl border border-violet-500/20 text-indigo-200 shadow-xl rounded-2xl">
+            <DropdownMenuLabel className="text-violet-200">บัญชีของฉัน</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-violet-500/10" />
+            <DropdownMenuItem onClick={() => router.push('/profile')} className="focus:bg-violet-950/30 cursor-pointer transition-colors">
+              <User className="mr-3 h-4 w-4" /> ตั้งค่าโปรไฟล์
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/history')}>
-              <History className="mr-2 h-4 w-4" /> ประวัติความฝัน
+            <DropdownMenuItem onClick={() => router.push('/history')} className="focus:bg-violet-950/30 cursor-pointer transition-colors">
+              <History className="mr-3 h-4 w-4" /> ประวัติความฝัน
             </DropdownMenuItem>
-            
-            {/* ✅ เมนูติดตั้งแอป (แสดงเฉพาะเมื่อติดตั้งได้) */}
-            {isSupported && !isInstalled && (
-              <DropdownMenuItem onClick={() => { installApp(); handleDismissPWA() }} className="text-green-600 font-medium bg-green-50">
-                <Download className="mr-2 h-4 w-4" /> ติดตั้งแอปลงเครื่อง
+
+            {(canInstall || isIOS) && (
+              <DropdownMenuItem onClick={handleInstall} className="text-cyan-300 focus:bg-cyan-950/30 cursor-pointer transition-colors">
+                <Download className="mr-3 h-4 w-4" /> ติดตั้ง DreamAI
               </DropdownMenuItem>
             )}
 
-            {/* ✅ เมนู Admin (แสดงเฉพาะ Role Admin) */}
             {isAdmin && (
               <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/admin')} className="text-indigo-600 font-medium">
-                  <Settings className="mr-2 h-4 w-4" /> ผู้ดูแลระบบ (Admin)
+                <DropdownMenuSeparator className="bg-violet-500/10" />
+                <DropdownMenuItem onClick={() => router.push('/admin')} className="text-violet-300 focus:bg-violet-950/30 cursor-pointer transition-colors">
+                  <Settings className="mr-3 h-4 w-4" /> ผู้ดูแลระบบ
                 </DropdownMenuItem>
               </>
             )}
-            
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600">
-              <LogOut className="mr-2 h-4 w-4" /> ออกจากระบบ
+
+            <DropdownMenuSeparator className="bg-violet-500/10" />
+            <DropdownMenuItem onClick={handleLogout} className="text-rose-300 focus:bg-rose-950/30 cursor-pointer transition-colors">
+              <LogOut className="mr-3 h-4 w-4" /> ออกจากระบบ
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </nav>
 
-      <div className="container mx-auto p-4 max-w-3xl mt-6">
-        <Card className="shadow-sm border-slate-200 mb-8 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-indigo-50 to-white">
-            <CardTitle className="flex items-center justify-between text-slate-800">
-                <span className="flex items-center gap-2"><Moon className="w-5 h-5 text-indigo-500" /> ทำนายฝัน</span>
-                <span className="text-xs font-normal text-slate-500 bg-white px-2 py-1 rounded-full border">
-                  {format(new Date(), 'd MMM yyyy', { locale: th })}
-                </span>
+      <div className="container mx-auto px-4 sm:px-6 py-8 md:py-12 max-w-4xl relative z-10">
+        {/* ปุ่มติดตั้ง - ปรับสีให้กลมกลืน */}
+        {(canInstall || isIOS) && (
+          <div className="mb-10 text-center animate-in fade-in slide-in-from-top-4 duration-700">
+            <Button
+              onClick={handleInstall}
+              className="gap-2 px-8 py-6 text-lg bg-gradient-to-r from-cyan-600/90 to-teal-600/90 hover:from-cyan-500 hover:to-teal-500 text-white shadow-xl shadow-cyan-900/40 transition-all duration-400 hover:scale-105 border border-cyan-400/20"
+            >
+              <Download className="w-5 h-5" />
+              ติดตั้ง DreamAI ลงเครื่อง (ฟรี)
+            </Button>
+            <p className="mt-3 text-sm text-indigo-300/90">เปิดแอปเร็วจากหน้าจอหลัก — สะดวกทุกครั้งที่อยากตีฝัน</p>
+          </div>
+        )}
+
+        <Card className="bg-violet-950/18 backdrop-blur-2xl border border-violet-500/20 shadow-2xl shadow-violet-950/35 rounded-3xl overflow-hidden mb-12 animate-in fade-in zoom-in-95 duration-700">
+          <CardHeader className="bg-gradient-to-r from-violet-950/25 to-indigo-950/25 pb-6 border-b border-violet-500/15">
+            <CardTitle className="flex items-center justify-between text-[#f0f0ff] text-2xl md:text-3xl font-bold">
+              <span className="flex items-center gap-3">
+                <Moon className="w-7 h-7 text-violet-300 animate-pulse-slow" /> ทำนายฝันด้วย AI
+              </span>
+              <span className="text-base font-normal text-indigo-200 bg-violet-950/30 px-5 py-2 rounded-full border border-violet-500/20">
+                {format(new Date(), 'd MMMM yyyy', { locale: th })}
+              </span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 pt-6">
-            <div className="relative">
-              <Textarea 
+          <CardContent className="pt-10 space-y-8 px-6 md:px-8">
+            <div className="relative group">
+              <Textarea
                 ref={textareaRef}
-                placeholder="เล่าความฝันของคุณให้ฟังหน่อย... (เช่น ฝันเห็นงูใหญ่สีดำ)" 
+                placeholder="เล่าความฝันของคุณให้ DreamAI ฟัง... (เช่น ฝันเห็นทะเลสีม่วง ลอยอยู่เหนือเมืองโบราณ)"
                 value={dream}
                 onChange={(e) => setDream(e.target.value)}
-                rows={5}
-                className="text-lg resize-none pr-12 shadow-inner bg-slate-50/50 border-slate-200 focus:bg-white transition-colors"
+                rows={7}
+                className="text-base md:text-lg resize-none pr-20 bg-violet-950/15 border-violet-500/25 text-[#f0f0ff] placeholder:text-indigo-300/70 focus:border-violet-400 focus:ring-violet-400/20 focus:bg-violet-950/25 transition-all duration-300 rounded-2xl shadow-inner min-h-[160px] group-focus-within:shadow-violet-900/30"
               />
-              <button 
+              <button
                 onClick={isRecording ? () => recognitionRef.current?.stop() : startListening}
-                className={`absolute bottom-3 right-3 p-2 rounded-full transition-all duration-300 ${isRecording ? 'bg-red-500 text-white shadow-lg animate-pulse scale-110' : 'bg-white text-slate-400 hover:text-indigo-600 shadow-sm border'}`}
-                title="กดเพื่อพูด"
+                className={`absolute bottom-5 right-5 p-4 rounded-full transition-all duration-400 shadow-lg ${
+                  isRecording
+                    ? 'bg-rose-600/90 text-white animate-pulse scale-110 shadow-rose-900/50'
+                    : 'bg-violet-950/40 text-violet-300 hover:bg-violet-600/70 hover:text-white border border-violet-400/30 hover:scale-105'
+                }`}
+                title={isRecording ? 'หยุดบันทึก' : 'บันทึกเสียงเล่าฝัน (ไทย)'}
               >
-                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                {isRecording ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
               </button>
             </div>
-            
-            <Button className="w-full h-12 text-lg bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all active:scale-[0.99]" onClick={handleSubmit} disabled={loading || !dream}>
-              {loading ? '🔮 กำลังเชื่อมต่อจิตใต้สำนึก...' : 'เริ่มทำนายฝัน'}
+
+            <Button
+              className="w-full h-14 md:h-16 text-lg md:text-xl font-semibold bg-gradient-to-r from-violet-600 via-indigo-600 to-violet-600 hover:brightness-110 hover:scale-[1.02] transition-all duration-400 shadow-xl shadow-violet-900/50 disabled:opacity-50 border border-violet-400/15"
+              onClick={handleSubmit}
+              disabled={loading || !dream.trim()}
+            >
+              {loading ? (
+                <span className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                  กำลังเชื่อมต่อจิตใต้สำนึก...
+                </span>
+              ) : '🔮 ทำนายฝันเลย'}
             </Button>
           </CardContent>
         </Card>
 
         {loading && (
-           <div className="space-y-6">
-              <Skeleton className="h-48 w-full rounded-xl bg-slate-200/60" />
-              <Skeleton className="h-24 w-full rounded-xl bg-slate-200/60" />
-           </div>
+          <div className="space-y-8">
+            <Skeleton className="h-80 w-full rounded-3xl bg-violet-950/20" />
+            <Skeleton className="h-64 w-full rounded-3xl bg-violet-950/20" />
+          </div>
         )}
 
         {!loading && result && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6 pb-10">
-            <Card className="bg-white border-l-4 border-l-indigo-500 shadow-lg">
-              <CardHeader><CardTitle className="text-indigo-700 flex items-center gap-2"><Sparkles className="w-5 h-5" /> ผลการวิเคราะห์</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-lg leading-relaxed whitespace-pre-line text-slate-700">{result.analysis}</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-800">
+            <Card className="bg-violet-950/20 backdrop-blur-xl border border-violet-500/25 shadow-xl shadow-violet-950/30 rounded-3xl overflow-hidden">
+              <CardHeader className="border-b border-violet-500/15 pb-6">
+                <CardTitle className="text-violet-200 flex items-center gap-3 text-xl md:text-2xl font-bold">
+                  <Sparkles className="w-6 h-6 animate-pulse-slow" /> ผลการตีความ
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-8 text-[#f0f0ff] text-base md:text-lg leading-relaxed whitespace-pre-line px-6 md:px-8">
+                {result.analysis}
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border border-orange-100 shadow-md relative overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-orange-200 rounded-full opacity-20 blur-xl"></div>
-              <CardHeader><CardTitle className="text-orange-800 text-center text-sm uppercase tracking-widest font-semibold">เลขมงคลนำโชค</CardTitle></CardHeader>
-              <CardContent className="text-center">
-                <p className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500 tracking-tight drop-shadow-sm">{result.lucky_numbers}</p>
+
+            <Card className="bg-gradient-to-br from-amber-950/30 to-orange-950/20 border border-amber-700/30 shadow-2xl shadow-amber-950/35 rounded-3xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(245,158,11,0.12),transparent_80%)] opacity-60" />
+              <CardHeader className="border-b border-amber-700/20 pb-6">
+                <CardTitle className="text-amber-200 text-center text-base md:text-lg uppercase tracking-wider font-semibold">
+                  เลขนำโชคจากฝันของคุณ
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center py-12 md:py-16">
+                <p className="text-7xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-orange-300 to-amber-200 tracking-tighter drop-shadow-2xl animate-glow-slow">
+                  {result.lucky_numbers}
+                </p>
+                <p className="mt-4 text-amber-200/90 text-lg">นำโชคในวันนี้และวันข้างหน้า</p>
               </CardContent>
             </Card>
           </div>
         )}
       </div>
-      
+
       <QuickActionWidget onClick={scrollToInput} />
+
+      {/* iOS Modal - ปรับให้กลมกลืนธีม */}
+      {showIOSModal && (
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="bg-violet-950/25 backdrop-blur-2xl rounded-3xl max-w-md w-full border border-violet-500/20 shadow-2xl overflow-hidden">
+            <div className="p-7 pb-5">
+              <h3 className="text-2xl font-bold text-cyan-300 mb-5">
+                วิธีติดตั้ง DreamAI บน iOS
+              </h3>
+              <ol className="list-decimal list-inside space-y-4 text-indigo-200 text-base leading-relaxed">
+                <li>กดไอคอน <strong>แชร์</strong> (สี่เหลี่ยมมีลูกศรขึ้น) ใน Safari</li>
+                <li>เลื่อนหา <strong>เพิ่มลงในหน้าจอโฮม</strong></li>
+                <li>แตะ <strong>เพิ่ม</strong> เพื่อยืนยัน</li>
+                <li>ไอคอนจะปรากฏบนหน้าจอหลัก — แตะเปิดได้ทันที!</li>
+              </ol>
+            </div>
+            <div className="bg-violet-950/20 px-7 py-5 flex justify-end gap-4 border-t border-violet-500/15">
+              <Button variant="ghost" onClick={() => setShowIOSModal(false)} className="text-indigo-200 hover:text-white">
+                ปิด
+              </Button>
+              <Button onClick={() => setShowIOSModal(false)} className="bg-cyan-600 hover:bg-cyan-500">
+                เข้าใจแล้ว
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
